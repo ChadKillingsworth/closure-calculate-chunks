@@ -1,0 +1,18 @@
+{
+  "name": "closure-calculate-chunks",
+  "version": "0.0.1",
+  "description": "Analyze dependencies from entry points and split code for closure-compiler",
+  "main": "index.js",
+  "repository": "https://github.com/chadkillingsworth/closure-calculage-chunks",
+  "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "acorn": "7.x",
+    "acorn-walk": "7.x",
+    "graphlib": "2.x",
+    "minimist": "1.x"
+  },
+  "engines": {
+    "node" : ">=12.2.0"
+  }
+}
