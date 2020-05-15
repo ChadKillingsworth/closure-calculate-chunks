@@ -1,6 +1,6 @@
 {
   "name": "closure-calculate-chunks",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Analyze dependencies from entry points and split code for closure-compiler",
   "main": "index.js",
   "repository": "https://github.com/chadkillingsworth/closure-calculage-chunks",
@@ -13,6 +13,6 @@
     "minimist": "1.x"
   },
   "engines": {
-    "node" : ">=12.2.0"
+    "node": ">=12.2.0"
   }
 }
