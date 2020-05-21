@@ -95,7 +95,8 @@ while(sortedChunks.length > 0) {
     parents = parents.map(parentName => path.relative(process.cwd(), parentName));
     if (!chunk.sources.includes(chunkName)) {
       hasError = true;
-      console.warn('Chunk entrypoint', normalizedChunkName, 'not found in chunk sources');
+      console.warn(`Chunk entrypoint ${normalizedChunkName} not found in chunk sources. ` +
+          `Ensure that all imports of ${normalizedChunkName} are dynamic.`);
     }
     visitedChunks.add(chunkName);
     chunks.push(`${normalizedChunkName}:${chunk.sources.length}${parents.length === 0 ? '' : ':' + parents.join(',')}`);
