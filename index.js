@@ -63,24 +63,44 @@ if (flags.closureLibraryBaseJsPath) {
   }
 }
 
-const {graph, entrypoint} =
+let {graph, entrypoint} =
     findDepsFromEntryPoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
 // console.warn('nodes\n', graphlib.json.write(graph).nodes.map(n => n.value));
 // console.warn('edges\n', graphlib.json.write(graph).edges);
 
-normalizeGraph(entrypoint, graph);
-// console.warn('Normalized nodes\n', graphlib.json.write(graph).nodes.map(n => n.value));
-const chunks = [];
-const sources = [];
-const sortedNodes = graphlib.alg.isAcyclic(graph) ?
-  graphlib.alg.preorder(graph, entrypoint) :
-  graphlib.alg.topsort(graph);
-const visitedChunks = new Set();
-const sortedChunks = [];
-sortedNodes.forEach(chunkName => {
-  sortedChunks.push(chunkName);
+const dependenciesToHoist = normalizeGraph(entrypoint, graph, true);
+let graphNeedsRebuilt = false;
+dependenciesToHoist.forEach((sources, nodename) => {
+  if (sources.length > 0) {
+    graphNeedsRebuilt =  true;
+  }
 });
+if (graphNeedsRebuilt) {
+  graph = findDepsFromEntryPoints(
+      entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace, dependenciesToHoist)
+      .graph;
+  normalizeGraph(entrypoint, graph);
+}
+
+const cycles = graphlib.alg.findCycles(graph);
+if (cycles.length > 0) {
+  console.warn(`Circular references found in chunk graph.`, cycles);
+}
+
+const chunks = [];
+const sources = []
+const visitedChunks = new Set();
+let sortedChunks;
+if (cycles.length === 0) {
+  sortedChunks = graphlib.alg.topsort(graph, entrypoint);
+} else {
+  sortedChunks = graph.nodes();
+  const entrypointIndex = sortedChunks.indexOf(entrypoint);
+  sortedChunks.splice(entrypointIndex, 1);
+  sortedChunks.unshift(entrypoint);
+}
 let hasError = false;
+let sourceCount = 0;
 while(sortedChunks.length > 0) {
   let {length} = sortedChunks;
   for (let i = 0; i < sortedChunks.length; i++) {
@@ -88,9 +108,11 @@ while(sortedChunks.length > 0) {
     const normalizedChunkName = path.relative(process.cwd(), chunkName);
     const chunk = graph.node(chunkName);
     let parents = graph.inEdges(chunkName).map(edge => edge.v);
-    const visitedParents = parents.filter(parent => visitedChunks.has(parent));
-    if (visitedParents.length !== parents.length) {
-      continue;
+    if (cycles.length === 0) {
+      const visitedParents = parents.filter(parent => visitedChunks.has(parent));
+      if (visitedParents.length !== parents.length) {
+        continue;
+      }
     }
     parents = parents.map(parentName => path.relative(process.cwd(), parentName));
     if (!chunk.sources.includes(chunkName)) {
@@ -98,6 +120,7 @@ while(sortedChunks.length > 0) {
       console.warn(`Chunk entrypoint ${normalizedChunkName} not found in chunk sources. ` +
           `Ensure that all imports of ${normalizedChunkName} are dynamic.`);
     }
+    sourceCount += chunk.sources.length;
     visitedChunks.add(chunkName);
     chunks.push(`${normalizedChunkName}:${chunk.sources.length}${parents.length === 0 ? '' : ':' + parents.join(',')}`);
     sources.push(...chunk.sources);
