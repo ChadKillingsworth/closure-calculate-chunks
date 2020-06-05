@@ -1,9 +1,10 @@
 {
   "name": "closure-calculate-chunks",
   "version": "0.0.5",
+  "private": true,
   "description": "Analyze dependencies from entry points and split code for closure-compiler",
   "main": "index.js",
-  "repository": "https://github.com/chadkillingsworth/closure-calculage-chunks",
+  "repository": "https://github.com/chadkillingsworth/closure-calculate-chunks",
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
