@@ -63,12 +63,10 @@ if (flags.closureLibraryBaseJsPath) {
   }
 }
 
-let {graph, entrypoint} =
+let {graph: graphFromLoadOrder, entrypoint} =
     findDepsFromEntryPoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
-// console.warn('nodes\n', graphlib.json.write(graph).nodes.map(n => n.value));
-// console.warn('edges\n', graphlib.json.write(graph).edges);
 
-const dependenciesToHoist = normalizeGraph(entrypoint, graph, true);
+const dependenciesToHoist = normalizeGraph(entrypoint, graphFromLoadOrder, true);
 let graphNeedsRebuilt = false;
 dependenciesToHoist.forEach((sources, nodename) => {
   if (sources.length > 0) {
@@ -76,13 +74,36 @@ dependenciesToHoist.forEach((sources, nodename) => {
   }
 });
 if (graphNeedsRebuilt) {
-  graph = findDepsFromEntryPoints(
+  graphFromLoadOrder = findDepsFromEntryPoints(
       entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace, dependenciesToHoist)
       .graph;
-  normalizeGraph(entrypoint, graph);
+  normalizeGraph(entrypoint, graphFromLoadOrder);
 }
 
-const cycles = graphlib.alg.findCycles(graph);
+const sourceNodes = new Map();
+graphFromLoadOrder.nodes().forEach((nodeName) => {
+  const node = graphFromLoadOrder.node(nodeName);
+  node.sources.forEach((source) => {
+    sourceNodes.set(source, nodeName);
+  });
+});
+const graphFromDepReferences = new graphlib.Graph({compound: false, directed: true});
+graphFromLoadOrder.nodes().forEach((nodeName) => {
+  const node = graphFromLoadOrder.node(nodeName);
+  graphFromDepReferences.setNode(nodeName, node);
+  const parentNodes = new Set();
+  node.deps.forEach((dep) => {
+    const parentNode = sourceNodes.get(dep);
+    if (parentNode !== nodeName) {
+      parentNodes.add(parentNode);
+    }
+  });
+  parentNodes.forEach((parentNodeName) => {
+    graphFromDepReferences.setEdge(parentNodeName, nodeName);
+  });
+});
+
+const cycles = graphlib.alg.findCycles(graphFromDepReferences);
 if (cycles.length > 0) {
   console.warn(`Circular references found in chunk graph.`, cycles);
 }
@@ -92,9 +113,9 @@ const sources = []
 const visitedChunks = new Set();
 let sortedChunks;
 if (cycles.length === 0) {
-  sortedChunks = graphlib.alg.topsort(graph, entrypoint);
+  sortedChunks = graphlib.alg.topsort(graphFromDepReferences, entrypoint);
 } else {
-  sortedChunks = graph.nodes();
+  sortedChunks = graphFromDepReferences.nodes();
   const entrypointIndex = sortedChunks.indexOf(entrypoint);
   sortedChunks.splice(entrypointIndex, 1);
   sortedChunks.unshift(entrypoint);
@@ -106,8 +127,8 @@ while(sortedChunks.length > 0) {
   for (let i = 0; i < sortedChunks.length; i++) {
     const chunkName = sortedChunks[i];
     const normalizedChunkName = path.relative(process.cwd(), chunkName);
-    const chunk = graph.node(chunkName);
-    let parents = graph.inEdges(chunkName).map(edge => edge.v);
+    const chunk = graphFromDepReferences.node(chunkName);
+    let parents = graphFromDepReferences.inEdges(chunkName).map(edge => edge.v);
     if (cycles.length === 0) {
       const visitedParents = parents.filter(parent => visitedChunks.has(parent));
       if (visitedParents.length !== parents.length) {
