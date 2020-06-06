@@ -1,7 +1,7 @@
 const graphlib = require('graphlib');
 const findDepsFromEntryPoints = require('./lib/find-dependencies');
 const normalizeGraph = require('./lib/normalize-graph');
-const lowestCommonAncestor = require('./lib/lowest-common-ancestor.js');
+const {commonAncestors} = require('./lib/common-ancestors.js');
 const acorn = require('acorn');
 const walk = require('acorn-walk');
 const fs = require('fs');
@@ -89,28 +89,22 @@ graphFromLoadOrder.nodes().forEach((nodeName) => {
   });
 });
 const graphFromDepReferences = new graphlib.Graph({compound: false, directed: true});
-/** @type {!Object<string, {distance: number, predecessor: (string|undefined)}>} */
-let nodeDistanceFromEntrypoint = graphlib.alg.dijkstra(graphFromLoadOrder, entrypoint, () => 1);
 graphFromLoadOrder.nodes().forEach((nodeName) => {
   const node = graphFromLoadOrder.node(nodeName);
   graphFromDepReferences.setNode(nodeName, node);
-  const parentNodes = new Set();
-  node.deps.forEach((dep) => {
-    const parentNode = sourceNodes.get(dep);
-    if (parentNode !== nodeName) {
-      parentNodes.add(parentNode);
-    }
-  });
   const parentNodeNames = graphFromLoadOrder.inEdges(nodeName).map((edge) => edge.v);
   if (parentNodeNames.length === 1) {
-    parentNodes.add(parentNodeNames[0]);
+    graphFromDepReferences.setEdge(parentNodeNames[0], nodeName);
   } else if (parentNodeNames.length > 1) {
-    parentNodes.add(lowestCommonAncestor(entrypoint, parentNodeNames, graphFromLoadOrder, nodeDistanceFromEntrypoint));
-  }
+    const {entrypointPaths, commonNodes} = commonAncestors(entrypoint, parentNodeNames, graphFromLoadOrder);
 
-  parentNodes.forEach((parentNodeName) => {
-    graphFromDepReferences.setEdge(parentNodeName, nodeName);
-  });
+    const commonParentNodes = new Set();
+    entrypointPaths.map((pathToEntrypoint) => pathToEntrypoint.filter((ancestor) => commonNodes.has(ancestor)))
+        .forEach((commonNodesPathToEntrypoint) => commonParentNodes.add(commonNodesPathToEntrypoint[0]));
+
+    commonParentNodes.forEach(
+        (commonParentNode) => graphFromDepReferences.setEdge(commonParentNode, nodeName));
+  }
 });
 
 const cycles = graphlib.alg.findCycles(graphFromDepReferences);
