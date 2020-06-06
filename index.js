@@ -1,6 +1,7 @@
 const graphlib = require('graphlib');
 const findDepsFromEntryPoints = require('./lib/find-dependencies');
 const normalizeGraph = require('./lib/normalize-graph');
+const lowestCommonAncestor = require('./lib/lowest-common-ancestor.js');
 const acorn = require('acorn');
 const walk = require('acorn-walk');
 const fs = require('fs');
@@ -23,7 +24,7 @@ if (flags.manualEntrypoint) {
 manualEntrypoints = manualEntrypoints.map(entrypoint => {
   const parts = entrypoint.split(':');
   return {
-    parent: parts[0] === '*' ? '*' : path.resolve(parts[0]),
+    parent: path.resolve(parts[0]),
     child: path.resolve(parts[1])
   };
 });
@@ -88,6 +89,8 @@ graphFromLoadOrder.nodes().forEach((nodeName) => {
   });
 });
 const graphFromDepReferences = new graphlib.Graph({compound: false, directed: true});
+/** @type {!Object<string, {distance: number, predecessor: (string|undefined)}>} */
+let nodeDistanceFromEntrypoint = graphlib.alg.dijkstra(graphFromLoadOrder, entrypoint, () => 1);
 graphFromLoadOrder.nodes().forEach((nodeName) => {
   const node = graphFromLoadOrder.node(nodeName);
   graphFromDepReferences.setNode(nodeName, node);
@@ -98,6 +101,13 @@ graphFromLoadOrder.nodes().forEach((nodeName) => {
       parentNodes.add(parentNode);
     }
   });
+  const parentNodeNames = graphFromLoadOrder.inEdges(nodeName).map((edge) => edge.v);
+  if (parentNodeNames.length === 1) {
+    parentNodes.add(parentNodeNames[0]);
+  } else if (parentNodeNames.length > 1) {
+    parentNodes.add(lowestCommonAncestor(entrypoint, parentNodeNames, graphFromLoadOrder, nodeDistanceFromEntrypoint));
+  }
+
   parentNodes.forEach((parentNodeName) => {
     graphFromDepReferences.setEdge(parentNodeName, nodeName);
   });
