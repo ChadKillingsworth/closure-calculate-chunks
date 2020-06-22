@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chunk Graph for {{entrypoint}}</title>
+  <style type="text/css">
+    body {
+      margin: 0;
+    }
+    #container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+    #controls {
+      position: absolute;
+      z-index: 1;
+      top: 10px;
+      left: 10px;
+    }
+  </style>
+</head>
+<body>
+<div id="controls">
+  <button onclick="switchToChunkGraph()">Chunk Graph</button> <button onclick="switchToClosureGraph()">Closure Graph</button>
+</div>
+<div id="container"></div>
+<script src="{{sigma_path}}"></script>
+<script src="{{sigma_force_atlas_path}}"></script>
+<script>
+  const chunkGraph = {{chunk_graph}};
+  const closureGraph = {{closure_graph}};
+
+  let s = new sigma({
+    graph: chunkGraph,
+    renderer: {
+      type: 'canvas',
+      container: document.getElementById('container')
+    },
+    settings: {
+      edgeColor: 'target',
+      maxNodeSize: 20,
+      minNodeSize: 4,
+      maxEdgeSize: 3,
+      minEdgeSize: 1
+    }
+  });
+  function redrawGraph() {
+    s.refresh();
+    s.startForceAtlas2();
+    s.renderers[0].resize();
+    setTimeout(() => {
+      s.stopForceAtlas2();
+    }, 2000);
+  }
+  redrawGraph();
+
+  function switchToClosureGraph() {
+    s.graph.clear();
+    s.graph.read(closureGraph);
+    redrawGraph();
+  }
+
+  function switchToChunkGraph() {
+    s.graph.clear();
+    s.graph.read(chunkGraph);
+    redrawGraph();
+  }
+</script>
+</body>
+</html>

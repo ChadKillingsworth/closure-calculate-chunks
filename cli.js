@@ -2,9 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const parseArgs = require('minimist');
+const temp = require('temp');
+const open = require('open');
 const ChunkGraph = require('./lib/chunk-graph');
 const parseGoogDeps = require('./lib/parse-goog-deps');
 const resolveFrom = require('./lib/resolve-from');
+const generateHtml = require('./lib/generate-html');
 
 const rawFlags = parseArgs(process.argv.slice(2));
 
@@ -26,6 +29,7 @@ Options:
                                                         file. Used to find paths to closure-libary namespaces.
   --extra-deps <namespace>:<path/to/file>               Optional: Namespace and path to a file providing a closure
                                                         namespace or module.
+  --visualize                                           Create and open an html page to visualize the graph.
   --help                                                Output usage information
 `);
   process.exit(0);
@@ -85,4 +89,29 @@ if (flags.closureLibraryBaseJsPath) {
 
 const chunkGraph =
     ChunkGraph.buildFromEntrypoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
-process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
+
+if (flags.visualize) {
+  generateHtml(chunkGraph)
+      .then((html) =>  new Promise((resolve, reject) => {
+        const tempFile = temp.path({ prefix: 'closure-calculate-chunks-', suffix: '.html' });
+
+        fs.writeFile(tempFile, html, 'utf8', (err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(tempFile);
+        });
+      }))
+      .then((tempFilePath) => {
+        console.log("Created temp file", tempFilePath);
+        const childProcess = open(tempFilePath);
+        if (childProcess.stderr) {
+          // Catch error output from child process
+          childProcess.stderr.once('data', (error) => {
+            console.error({ code: 'CannotOpenTempFile', tempFilePath, error });
+          });
+        }
+      });
+} else {
+  process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
+}

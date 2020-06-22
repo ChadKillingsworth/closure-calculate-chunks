@@ -20,6 +20,8 @@ node --preserve-symlinks node_modules/closure-calculate-chunks/index.js --entryp
  - **--deps-file path/to/closure/deps.js** This flag may occur multiple times.
 
  - **--extra-deps namespace:path/to/providing/src** This flag may occur multiple times.
+ 
+ - **--visualize** Instead of outputting the closure compiler flags, open an HTML page to visualize the graph.
 
 ## Output
 Outputs a JSON object with closure-compiler chunk definitions and source files in dependency order.
