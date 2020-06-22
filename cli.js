@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 const parseArgs = require('minimist');
@@ -5,7 +6,39 @@ const ChunkGraph = require('./lib/chunk-graph');
 const parseGoogDeps = require('./lib/parse-goog-deps');
 const resolveFrom = require('./lib/resolve-from');
 
-const flags = parseArgs(process.argv.slice(2));
+const rawFlags = parseArgs(process.argv.slice(2));
+
+if (rawFlags.help) {
+  process.stdout.write(`Usage: node --preserve-symlinks node_modules/.bin/closure-calculate-chunks --entrypoint src/main.js
+
+Create a chunk graph from an entrypoint. New chunks are created when a dynamic import statement is encountered.
+
+Options:
+  --entrypoint <path/to/file>                           Required: Main entrypoint for the program. The first occurrence
+                                                        will be treated as the primary entrypoint. Additional
+                                                        entrypoints will be added as children of the primary entrypoint.
+  --manual-entrypoint <path/to/Parent>:<path/to/Child>  Optional: Add an arbitrary chunk entrypoint to the graph.
+  --root <path/to/project/root>                         Optional: Path to the project root directory. The current
+                                                        working directory of the process is used by default.
+  --closure-library-base-js-path <path/to/base.js>      Optional: Path to closure-library's base.js file. Required if
+                                                        closure-library or goog.module references are used.
+  --deps-file <path/to/deps.js>                         Optional: Path to closure-library deps.js file or custom deps.js
+                                                        file. Used to find paths to closure-libary namespaces.
+  --extra-deps <namespace>:<path/to/file>               Optional: Namespace and path to a file providing a closure
+                                                        namespace or module.
+  --help                                                Output usage information
+`);
+  process.exit(0);
+}
+
+function convertToCamelCase(value) {
+  return value.replace(/[-_][a-z]/g, (match) => match.substr(1).toUpperCase());
+}
+
+const flags = {};
+Object.keys(rawFlags).forEach((rawFlag) => {
+  flags[convertToCamelCase(rawFlag)] = rawFlags[rawFlag];
+});
 
 const entrypoints = (Array.isArray(flags.entrypoint) ? flags.entrypoint : [flags.entrypoint])
     .map(entrypoint => path.resolve(entrypoint));

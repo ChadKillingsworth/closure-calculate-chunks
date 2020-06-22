@@ -3,7 +3,10 @@
   "version": "0.0.7",
   "private": true,
   "description": "Analyze dependencies from entry points and split code for closure-compiler",
-  "main": "index.js",
+  "bin": {
+    "closure-calculate-chunks": "cli.js"
+  },
+  "main": "lib/chunk-graph.js",
   "repository": "https://github.com/chadkillingsworth/closure-calculate-chunks",
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
   "license": "Apache-2.0",
