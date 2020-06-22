@@ -1,13 +1,9 @@
-const graphlib = require('graphlib');
-const findDepsFromEntryPoints = require('./lib/find-dependencies');
-const normalizeGraph = require('./lib/normalize-graph');
-const {commonAncestors} = require('./lib/common-ancestors.js');
-const acorn = require('acorn');
-const walk = require('acorn-walk');
 const fs = require('fs');
 const path = require('path');
-const resolveFrom = require('./lib/resolve-from');
 const parseArgs = require('minimist');
+const ChunkGraph = require('./lib/chunk-graph');
+const parseGoogDeps = require('./lib/parse-goog-deps');
+const resolveFrom = require('./lib/resolve-from');
 
 const flags = parseArgs(process.argv.slice(2));
 
@@ -40,18 +36,8 @@ if (flags.closureLibraryBaseJsPath) {
     depsFiles.forEach(depFile => {
       const depFilePath = resolveFrom(`${process.cwd()}/package.json`, depFile);
       const depFileContents = fs.readFileSync(depFilePath, 'utf8');
-      const ast = acorn.Parser.parse(depFileContents, {ecmaVersion: 2020});
-      walk.simple(ast, {
-        CallExpression(node) {
-          if (node.callee.type === 'MemberExpression' &&
-              node.callee.object.type === 'Identifier' &&
-              node.callee.object.name === 'goog' &&
-              node.callee.property.type === 'Identifier' &&
-              node.callee.property.name === 'addDependency') {
-            const filePath = path.resolve(googBaseDir, node.arguments[0].value);
-            node.arguments[1].elements.forEach((arg) => googPathsByNamespace.set(arg.value, filePath));
-          }
-        }
+      parseGoogDeps(depFileContents, googBaseDir).forEach((filepath, namespace) => {
+        googPathsByNamespace.set(namespace, filepath);
       });
     });
   }
@@ -64,104 +50,6 @@ if (flags.closureLibraryBaseJsPath) {
   }
 }
 
-let {graph: graphFromLoadOrder, entrypoint} =
-    findDepsFromEntryPoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
-
-const dependenciesToHoist = normalizeGraph(entrypoint, graphFromLoadOrder, true);
-let graphNeedsRebuilt = false;
-dependenciesToHoist.forEach((sources, nodename) => {
-  if (sources.length > 0) {
-    graphNeedsRebuilt =  true;
-  }
-});
-if (graphNeedsRebuilt) {
-  graphFromLoadOrder = findDepsFromEntryPoints(
-      entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace, dependenciesToHoist)
-      .graph;
-  normalizeGraph(entrypoint, graphFromLoadOrder);
-}
-
-const sourceNodes = new Map();
-graphFromLoadOrder.nodes().forEach((nodeName) => {
-  const node = graphFromLoadOrder.node(nodeName);
-  node.sources.forEach((source) => {
-    sourceNodes.set(source, nodeName);
-  });
-});
-const graphFromDepReferences = new graphlib.Graph({compound: false, directed: true});
-graphFromLoadOrder.nodes().forEach((nodeName) => {
-  const node = graphFromLoadOrder.node(nodeName);
-  graphFromDepReferences.setNode(nodeName, node);
-  const parentNodeNames = graphFromLoadOrder.inEdges(nodeName).map((edge) => edge.v);
-  if (parentNodeNames.length === 1) {
-    graphFromDepReferences.setEdge(parentNodeNames[0], nodeName);
-  } else if (parentNodeNames.length > 1) {
-    const {entrypointPaths, commonNodes} = commonAncestors(entrypoint, parentNodeNames, graphFromLoadOrder);
-
-    const commonParentNodes = new Set();
-    entrypointPaths.map((pathToEntrypoint) => pathToEntrypoint.filter((ancestor) => commonNodes.has(ancestor)))
-        .forEach((commonNodesPathToEntrypoint) => commonParentNodes.add(commonNodesPathToEntrypoint[0]));
-
-    commonParentNodes.forEach(
-        (commonParentNode) => graphFromDepReferences.setEdge(commonParentNode, nodeName));
-  }
-});
-
-const cycles = graphlib.alg.findCycles(graphFromDepReferences);
-if (cycles.length > 0) {
-  console.warn(`Circular references found in chunk graph.`, cycles);
-}
-
-const chunks = [];
-const sources = []
-const visitedChunks = new Set();
-let sortedChunks;
-if (cycles.length === 0) {
-  sortedChunks = graphlib.alg.topsort(graphFromDepReferences, entrypoint);
-} else {
-  sortedChunks = graphFromDepReferences.nodes();
-  const entrypointIndex = sortedChunks.indexOf(entrypoint);
-  sortedChunks.splice(entrypointIndex, 1);
-  sortedChunks.unshift(entrypoint);
-}
-let hasError = false;
-let sourceCount = 0;
-while(sortedChunks.length > 0) {
-  let {length} = sortedChunks;
-  for (let i = 0; i < sortedChunks.length; i++) {
-    const chunkName = sortedChunks[i];
-    const normalizedChunkName = path.relative(process.cwd(), chunkName);
-    const chunk = graphFromDepReferences.node(chunkName);
-    let parents = graphFromDepReferences.inEdges(chunkName).map(edge => edge.v);
-    if (cycles.length === 0) {
-      const visitedParents = parents.filter(parent => visitedChunks.has(parent));
-      if (visitedParents.length !== parents.length) {
-        continue;
-      }
-    }
-    parents = parents.map(parentName => path.relative(process.cwd(), parentName));
-    if (!chunk.sources.includes(chunkName)) {
-      hasError = true;
-      console.warn(`Chunk entrypoint ${normalizedChunkName} not found in chunk sources. ` +
-          `Ensure that all imports of ${normalizedChunkName} are dynamic.`);
-    }
-    sourceCount += chunk.sources.length;
-    visitedChunks.add(chunkName);
-    chunks.push(`${normalizedChunkName}:${chunk.sources.length}${parents.length === 0 ? '' : ':' + parents.join(',')}`);
-    sources.push(...chunk.sources);
-    sortedChunks.splice(i, 1);
-    break;
-  }
-  if (length === sortedChunks.length) {
-    console.warn('Unable to sort chunks', sortedChunks);
-    process.exit(1);
-    break;
-  }
-}
-if (hasError) {
-  process.exit(1);
-}
-process.stdout.write(JSON.stringify({
-  chunk: chunks,
-  sources
-}, null, 2) + '\n');
+const chunkGraph =
+    ChunkGraph.buildFromEntrypoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
+process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
