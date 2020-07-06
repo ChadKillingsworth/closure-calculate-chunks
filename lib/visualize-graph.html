@@ -21,17 +21,17 @@
 </head>
 <body>
 <div id="controls">
-  <button onclick="switchToChunkGraph()">Chunk Graph</button> <button onclick="switchToClosureGraph()">Closure Graph</button>
+  <button onclick="switchToLoadGraph()">Load Graph</button> <button onclick="switchToDepGraph()">Dependency Graph</button>
 </div>
 <div id="container"></div>
 <script src="{{sigma_path}}"></script>
 <script src="{{sigma_force_atlas_path}}"></script>
 <script>
-  const chunkGraph = {{chunk_graph}};
-  const closureGraph = {{closure_graph}};
+  const loadGraph = {{load_graph}};
+  const depGraph = {{dep_graph}};
 
   let s = new sigma({
-    graph: chunkGraph,
+    graph: loadGraph,
     renderer: {
       type: 'canvas',
       container: document.getElementById('container')
@@ -54,15 +54,15 @@
   }
   redrawGraph();
 
-  function switchToClosureGraph() {
+  function switchToDepGraph() {
     s.graph.clear();
-    s.graph.read(closureGraph);
+    s.graph.read(depGraph);
     redrawGraph();
   }
 
-  function switchToChunkGraph() {
+  function switchToLoadGraph() {
     s.graph.clear();
-    s.graph.read(chunkGraph);
+    s.graph.read(loadGraph);
     redrawGraph();
   }
 </script>
