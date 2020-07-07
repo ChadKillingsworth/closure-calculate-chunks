@@ -1,13 +1,16 @@
 # closure-calculate-chunks
 
-A utility to parse JS files, determine dependencies and split code into
-output chunks for closure-compiler. Uses node module resolution and determines
+A utility to parse JS files, determine dependencies and specify which output chunk source files
+appear in for closure-compiler. Uses node module resolution and determines
 split points from dynamic import statements.
 
 **Usage:**
 ```
 node --preserve-symlinks node_modules/closure-calculate-chunks/index.js --entrypoint ./src/js/entry.js
 ```
+
+*Note: the node process that utilizes this library should be launched with the --preserve-symlinks
+option or the file paths returned may not match the path expected by node module resolution.*
 
 ## Flags
 
@@ -38,3 +41,8 @@ Outputs a JSON object with closure-compiler chunk definitions and source files i
   ]
 }
 ```
+
+## Why Sources End Up in Other Chunks
+
+Closure Compiler will not duplicate code. If a source file is utilized in more than one output chunk,
+this utility will hoist the file up into the lowest common ancestor which is common to all paths.
