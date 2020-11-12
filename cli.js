@@ -20,7 +20,10 @@ Options:
   --entrypoint <path/to/file>                           Required: Main entrypoint for the program. The first occurrence
                                                         will be treated as the primary entrypoint. Additional
                                                         entrypoints will be added as children of the primary entrypoint.
+                                                        Multiple files may be listed for a single entrypoint,
+                                                        separated by commas, to indicate they are both part of the same chunk. 
   --manual-entrypoint <path/to/Parent>:<path/to/Child>  Optional: Add an arbitrary chunk entrypoint to the graph.
+                                                        Multiple children may be listed separated by commas.
   --root <path/to/project/root>                         Optional: Path to the project root directory. The current
                                                         working directory of the process is used by default.
   --closure-library-base-js-path <path/to/base.js>      Optional: Path to closure-library's base.js file. Required if
@@ -45,7 +48,14 @@ Object.keys(rawFlags).forEach((rawFlag) => {
 });
 
 const entrypoints = (Array.isArray(flags.entrypoint) ? flags.entrypoint : [flags.entrypoint])
-    .map(entrypoint => path.resolve(entrypoint));
+    .map(entrypoint => {
+      const entrypointFiles = entrypoint.split(',')
+          .map(entrypointFilePath => path.resolve(entrypointFilePath));
+      return {
+        name: entrypointFiles[0],
+        files: entrypointFiles
+      }
+    });
 let manualEntrypoints = [];
 if (flags.manualEntrypoint) {
   if (Array.isArray(flags.manualEntrypoint)) {
@@ -56,9 +66,13 @@ if (flags.manualEntrypoint) {
 }
 manualEntrypoints = manualEntrypoints.map(entrypoint => {
   const parts = entrypoint.split(':');
+  const childrenFiles = parts[1].split(',').map((filepath) => path.resolve(filepath));
   return {
     parent: path.resolve(parts[0]),
-    child: path.resolve(parts[1])
+    child: {
+      name: path.resolve(parts[1]),
+      files: childrenFiles
+    }
   };
 });
 const rootDir = flags.root || process.cwd();
