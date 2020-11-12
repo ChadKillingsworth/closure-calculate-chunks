@@ -73,7 +73,7 @@ if (flags.closureLibraryBaseJsPath) {
     depsFiles.forEach(depFile => {
       const depFilePath = resolveFrom(`${process.cwd()}/package.json`, depFile);
       const depFileContents = fs.readFileSync(depFilePath, 'utf8');
-      parseGoogDeps(depFileContents, path.dirname(depFilePath)).forEach((filepath, namespace) => {
+      parseGoogDeps(depFileContents, googBaseDir).forEach((filepath, namespace) => {
         googPathsByNamespace.set(namespace, filepath);
       });
     });
