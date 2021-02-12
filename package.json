@@ -13,10 +13,10 @@
     "acorn": "7.x",
     "acorn-walk": "7.x",
     "graphlib": "2.x",
-    "minimist": "1.x",
     "open": "^7.0.4",
     "sigma": "1.x",
-    "temp": "^0.9.1"
+    "temp": "^0.9.1",
+    "yargs": "^16.2.0"
   },
   "engines": {
     "node": ">=12.2.0"

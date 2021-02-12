@@ -1,50 +1,78 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const parseArgs = require('minimist');
 const temp = require('temp');
 const open = require('open');
+const yargs = require('yargs');
 const ChunkGraph = require('./lib/chunk-graph');
 const parseGoogDeps = require('./lib/parse-goog-deps');
 const resolveFrom = require('./lib/resolve-from');
 const generateHtml = require('./lib/generate-html');
+const packageJson = require('./package.json');
 
-const rawFlags = parseArgs(process.argv.slice(2));
-
-if (rawFlags.help) {
-  process.stdout.write(`Usage: node --preserve-symlinks node_modules/.bin/closure-calculate-chunks --entrypoint src/main.js
-
-Create a chunk graph from an entrypoint. New chunks are created when a dynamic import statement is encountered.
-
-Options:
-  --entrypoint <path/to/file>                           Required: Main entrypoint for the program. The first occurrence
-                                                        will be treated as the primary entrypoint. Additional
-                                                        entrypoints will be added as children of the primary entrypoint.
-                                                        Multiple files may be listed for a single entrypoint,
-                                                        separated by commas, to indicate they are both part of the same chunk. 
-  --manual-entrypoint <path/to/Parent>:<path/to/Child>  Optional: Add an arbitrary chunk entrypoint to the graph.
-                                                        Multiple children may be listed separated by commas.
-  --root <path/to/project/root>                         Optional: Path to the project root directory. The current
-                                                        working directory of the process is used by default.
-  --closure-library-base-js-path <path/to/base.js>      Optional: Path to closure-library's base.js file. Required if
-                                                        closure-library or goog.module references are used.
-  --deps-file <path/to/deps.js>                         Optional: Path to closure-library deps.js file or custom deps.js
-                                                        file. Used to find paths to closure-libary namespaces.
-  --extra-deps <namespace>:<path/to/file>               Optional: Namespace and path to a file providing a closure
-                                                        namespace or module.
-  --visualize                                           Create and open an html page to visualize the graph.
-  --help                                                Output usage information
-`);
-  process.exit(0);
-}
-
-function convertToCamelCase(value) {
-  return value.replace(/[-_][a-z]/g, (match) => match.substr(1).toUpperCase());
-}
+const argv = yargs(process.argv)
+    .version(packageJson.version)
+    .option('entrypoint', {
+      demandOption: true,
+      describe: 'Format: <path/to/file>. Main entrypoint for the program. The first occurrence will be treated as the primary entrypoint. Additional entrypoints will be added as children of the primary entrypoint. Multiple files may be listed for a single entrypoint, separated by commas, to indicate they are both part of the same chunk.',
+      type: 'string'
+    })
+    .option('manual-entrypoint', {
+      describe: 'Format: <path/to/Parent>:<path/to/Child>. Add an arbitrary chunk entrypoint to the graph. Multiple children may be listed separated by commas.',
+      type: 'string'
+    })
+    .option('root', {
+      describe: 'Format: <path/to/project/root>. Path to the project root directory. The current working directory of the process is used by default.',
+      type: 'string'
+    })
+    .option('closure-library-base-js-path', {
+      describe: 'Format: <path/to/base.js>. Path to closure-library\'s base.js file. Required if closure-library or goog.module references are used.',
+      type: 'string'
+    })
+    .option('deps-file', {
+      describe: 'Fomrat: <path/to/deps.js>. Path to closure-library deps.js file or custom deps.js file. Used to find paths to closure-library namespaces.',
+      type: 'string',
+      requiresArg: 'closure-library-base-js-path'
+    })
+    .option('extra-deps', {
+      describe: 'Format: <namespace>:<path/to/file>. Namespace and path to a file providing a closure namespace or module.',
+      type: 'string',
+      requiresArg: 'closure-library-base-js-path'
+    })
+    .option('visualize', {
+      describe: 'Create and open an html page to visualize the graph.',
+      type: 'boolean'
+    })
+    .strict()
+    .help()
+    .check((argv) => {
+      if (argv.manualEntrypoint) {
+        const manualEntrypoints = Array.isArray(argv.manualEntrypoint) ? argv.manualEntrypoint : [argv.manualEntrypoint];
+        manualEntrypoints.forEach((manualEntrypoint) => {
+          const parts = manualEntrypoint.split(':');
+          if (parts.length < 2) {
+            throw new Error('manual-entrypoints must be of the form "<path/to/Parent>:<path/to/Child>"');
+          }
+        });
+      } else if (argv['extra-deps']) {
+        const extraDeps = Array.isArray(argv['extra-deps']) ? argv['extra-deps'] : [argv['extra-deps']];
+        extraDeps.forEach(dep => {
+          const depParts = dep.split(':');
+          if (depParts.length !== 2) {
+            throw new Error('extra-deps must be of the form "<namespace>:<path/to/file>"');
+          }
+        });
+      }
+      return true;
+    })
+    .usage('Usage: node --preserve-symlinks $0 --entrypoint src/main.js')
+    .argv;
 
 const flags = {};
-Object.keys(rawFlags).forEach((rawFlag) => {
-  flags[convertToCamelCase(rawFlag)] = rawFlags[rawFlag];
+Object.keys(argv).forEach((option) => {
+  if (/^[a-z]/.test(option) && !/-/.test(option)) {
+    flags[option] = argv[option];
+  }
 });
 
 const entrypoints = (Array.isArray(flags.entrypoint) ? flags.entrypoint : [flags.entrypoint])
