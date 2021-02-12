@@ -24,6 +24,8 @@ option or the file paths returned may not match the path expected by node module
 
  - **--extra-deps namespace:path/to/providing/src** This flag may occur multiple times.
  
+ - **--package-json-entry-names field1,field2,...** Ordered list of entries to look for in package.json files when resolving modules.
+ 
  - **--visualize** Instead of outputting the closure compiler flags, open an HTML page to visualize the graph.
 
 ## Output

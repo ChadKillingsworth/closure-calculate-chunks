@@ -44,7 +44,7 @@ const argv = yargs(process.argv)
       type: 'boolean'
     })
     .option('package-json-entry-names', {
-      describe: 'Ordered list of entries to look for in package.json files when processing modules',
+      describe: 'Ordered list of entries to look for in package.json files when resolving modules',
       default: 'browser,module,main',
       type: 'string'
     })
