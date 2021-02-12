@@ -43,8 +43,14 @@ const argv = yargs(process.argv)
       describe: 'Create and open an html page to visualize the graph.',
       type: 'boolean'
     })
+    .option('package-json-entry-names', {
+      describe: 'Ordered list of entries to look for in package.json files when processing modules',
+      default: 'browser,module,main',
+      type: 'string'
+    })
     .strict()
     .help()
+    .coerce('package-json-entry-names', (arg) => arg.split(/,\s*/g))
     .check((argv) => {
       if (argv.manualEntrypoint) {
         const manualEntrypoints = Array.isArray(argv.manualEntrypoint) ? argv.manualEntrypoint : [argv.manualEntrypoint];
@@ -130,7 +136,7 @@ if (flags.closureLibraryBaseJsPath) {
 }
 
 const chunkGraph =
-    ChunkGraph.buildFromEntrypoints(entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
+    ChunkGraph.buildFromEntrypoints(flags.packageJsonEntryNames, entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
 
 if (flags.visualize) {
   generateHtml(chunkGraph)
