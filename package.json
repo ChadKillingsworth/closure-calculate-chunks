@@ -10,8 +10,8 @@
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "acorn": "7.x",
-    "acorn-walk": "7.x",
+    "acorn": "8.x",
+    "acorn-walk": "8.x",
     "graphlib": "2.x",
     "open": "^7.0.4",
     "sigma": "1.x",
