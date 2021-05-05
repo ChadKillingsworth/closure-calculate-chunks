@@ -5,7 +5,8 @@
   "bin": {
     "closure-calculate-chunks": "cli.js"
   },
-  "main": "lib/chunk-graph.js",
+  "main": "lib/deps-finder.js",
+  "type": "module",
   "repository": "https://github.com/chadkillingsworth/closure-calculate-chunks",
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
   "license": "Apache-2.0",

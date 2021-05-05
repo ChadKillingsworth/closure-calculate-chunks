@@ -1,19 +1,20 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const temp = require('temp');
-const open = require('open');
-const yargs = require('yargs');
-const ChunkGraph = require('./lib/chunk-graph');
-const parseGoogDeps = require('./lib/parse-goog-deps');
-const generateHtml = require('./lib/generate-html');
-const packageJson = require('./package.json');
-const Module = require('module');
+import fs from 'fs';
+import path from 'path';
+import temp from 'temp';
+import open from 'open';
+import yargs from 'yargs';
+import Module from 'module';
+import ChunkGraph from './lib/chunk-graph.js';
+import parseGoogDeps from './lib/parse-goog-deps.js';
+import generateHtml from './lib/generate-html.js';
 
 function resolveFrom(filepath, moduleId) {
   const requireFrom = Module.createRequire(filepath);
   return requireFrom.resolve(moduleId);
 }
+
+const packageJson = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 const argv = yargs(process.argv)
     .version(packageJson.version)
