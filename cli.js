@@ -141,31 +141,38 @@ if (flags.closureLibraryBaseJsPath) {
   }
 }
 
-const chunkGraph =
-    ChunkGraph.buildFromEntrypoints(flags.packageJsonEntryNames, entrypoints, manualEntrypoints, rootDir, googBasePath, googPathsByNamespace);
+ChunkGraph
+    .buildFromEntrypoints(
+        flags.packageJsonEntryNames,
+        entrypoints,
+        manualEntrypoints,
+        rootDir,
+        googBasePath,
+        googPathsByNamespace)
+    .then((chunkGraph) => {
+      if (flags.visualize) {
+        generateHtml(chunkGraph)
+            .then((html) =>  new Promise((resolve, reject) => {
+              const tempFile = temp.path({ prefix: 'closure-calculate-chunks-', suffix: '.html' });
 
-if (flags.visualize) {
-  generateHtml(chunkGraph)
-      .then((html) =>  new Promise((resolve, reject) => {
-        const tempFile = temp.path({ prefix: 'closure-calculate-chunks-', suffix: '.html' });
-
-        fs.writeFile(tempFile, html, 'utf8', (err) => {
-          if (err) {
-            return reject(err);
-          }
-          resolve(tempFile);
-        });
-      }))
-      .then((tempFilePath) => {
-        console.log("Created temp file", tempFilePath);
-        const childProcess = open(tempFilePath);
-        if (childProcess.stderr) {
-          // Catch error output from child process
-          childProcess.stderr.once('data', (error) => {
-            console.error({ code: 'CannotOpenTempFile', tempFilePath, error });
-          });
-        }
-      });
-} else {
-  process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
-}
+              fs.writeFile(tempFile, html, 'utf8', (err) => {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(tempFile);
+              });
+            }))
+            .then((tempFilePath) => {
+              console.log("Created temp file", tempFilePath);
+              const childProcess = open(tempFilePath);
+              if (childProcess.stderr) {
+                // Catch error output from child process
+                childProcess.stderr.once('data', (error) => {
+                  console.error({ code: 'CannotOpenTempFile', tempFilePath, error });
+                });
+              }
+            });
+      } else {
+        process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
+      }
+    });

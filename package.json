@@ -5,7 +5,7 @@
   "bin": {
     "closure-calculate-chunks": "cli.js"
   },
-  "main": "lib/deps-finder.js",
+  "main": "lib/chunk-graph.js",
   "type": "module",
   "repository": "https://github.com/chadkillingsworth/closure-calculate-chunks",
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
@@ -14,11 +14,11 @@
     "acorn": "8.x",
     "acorn-walk": "8.x",
     "graphlib": "2.x",
-    "open": "^7.0.4",
-    "resolve": "^1.20.0",
+    "open": "7.x",
+    "resolve": "1.x",
     "sigma": "1.x",
-    "temp": "^0.9.1",
-    "yargs": "^16.2.0"
+    "temp": "0.x",
+    "yargs": "16.x"
   },
   "engines": {
     "node": ">=14.0.0"
