@@ -6,11 +6,8 @@ split points from dynamic import statements.
 
 **Usage:**
 ```
-node --preserve-symlinks node_modules/closure-calculate-chunks/index.js --entrypoint ./src/js/entry.js
+npx closure-calculate-chunks --entrypoint ./src/js/entry.js
 ```
-
-*Note: the node process that utilizes this library should be launched with the --preserve-symlinks
-option or the file paths returned may not match the path expected by node module resolution.*
 
 ## Flags
 

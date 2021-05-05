@@ -6,9 +6,14 @@ const open = require('open');
 const yargs = require('yargs');
 const ChunkGraph = require('./lib/chunk-graph');
 const parseGoogDeps = require('./lib/parse-goog-deps');
-const resolveFrom = require('./lib/resolve-from');
 const generateHtml = require('./lib/generate-html');
 const packageJson = require('./package.json');
+const Module = require('module');
+
+function resolveFrom(filepath, moduleId) {
+  const requireFrom = Module.createRequire(filepath);
+  return requireFrom.resolve(moduleId);
+}
 
 const argv = yargs(process.argv)
     .version(packageJson.version)
