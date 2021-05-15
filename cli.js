@@ -8,6 +8,7 @@ import Module from 'module';
 import ChunkGraph from './lib/chunk-graph.js';
 import parseGoogDeps from './lib/parse-goog-deps.js';
 import generateHtml from './lib/generate-html.js';
+import {NAMING_STYLE} from './lib/chunk-naming.js';
 
 function resolveFrom(filepath, moduleId) {
   const requireFrom = Module.createRequire(filepath);
@@ -54,6 +55,13 @@ const argv = yargs(process.argv)
       default: 'browser,module,main',
       type: 'string'
     })
+    .option('naming-style', {
+      describe: 'How the name of a chunk is determined. For "entrypoint", chunk names are derived from the imported ' +
+          'file name. For "numbered", the entrypoint is named "main" and child chunks are numeric indexes.',
+      choices: Array.from(Object.values(NAMING_STYLE)),
+      default: 'entrypoint',
+      type: 'string'
+    })
     .strict()
     .help()
     .coerce('package-json-entry-names', (arg) => arg.split(/,\s*/g))
@@ -77,7 +85,7 @@ const argv = yargs(process.argv)
       }
       return true;
     })
-    .usage('Usage: node --preserve-symlinks $0 --entrypoint src/main.js')
+    .usage('Usage: node $0 --entrypoint src/main.js')
     .argv;
 
 const flags = {};
@@ -150,8 +158,9 @@ ChunkGraph
         googBasePath,
         googPathsByNamespace)
     .then((chunkGraph) => {
+      const namingStyle = flags.namingStyle === NAMING_STYLE.NUMBERED ? NAMING_STYLE.NUMBERED : NAMING_STYLE.ENTRYPOINT;
       if (flags.visualize) {
-        generateHtml(chunkGraph)
+        generateHtml(chunkGraph, namingStyle)
             .then((html) =>  new Promise((resolve, reject) => {
               const tempFile = temp.path({ prefix: 'closure-calculate-chunks-', suffix: '.html' });
 
@@ -173,6 +182,6 @@ ChunkGraph
               }
             });
       } else {
-        process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(), null, 2) + '\n');
+        process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(namingStyle), null, 2) + '\n');
       }
     });

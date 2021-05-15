@@ -40,6 +40,10 @@ Ordered list of entries to look for in package.json files when resolving modules
 **--visualize**  
 Instead of outputting the closure compiler flags, open an HTML page to visualize the graph.
 
+**--naming-style [entrypoint, numbered]**  
+How the name of a chunk is determined. For "entrypoint", chunk names are derived from the imported
+file name. For "numbered", the entrypoint is named "main" and child chunks are numeric indexes.
+
 ## Output
 Outputs a JSON object with closure-compiler chunk definitions and source files in dependency order.
 
