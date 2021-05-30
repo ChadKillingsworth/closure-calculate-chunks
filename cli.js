@@ -182,6 +182,11 @@ ChunkGraph
               }
             });
       } else {
-        process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(namingStyle), null, 2) + '\n');
+        try {
+          process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(namingStyle), null, 2) + '\n');
+        } catch (e) {
+          process.stderr.write(`Error: ${e.message}\n`);
+          process.exitCode = 1;
+        }
       }
     });
