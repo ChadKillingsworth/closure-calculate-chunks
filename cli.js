@@ -151,9 +151,9 @@ if (flags.closureLibraryBaseJsPath) {
 
 ChunkGraph
     .buildFromEntrypoints(
-        flags.packageJsonEntryNames,
         entrypoints,
         manualEntrypoints,
+        flags.packageJsonEntryNames,
         rootDir,
         googBasePath,
         googPathsByNamespace)
