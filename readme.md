@@ -53,7 +53,7 @@ Outputs a JSON object with closure-compiler chunk definitions and source files i
     "baseChunkName:numFiles",
     "childChunkName:numFiles:baseChunkName"
   ],
-  "sources": [
+  "js": [
     "file1.js",
     "file2.js"
   ]
