@@ -1,6 +1,6 @@
 {
   "name": "closure-calculate-chunks",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Analyze dependencies from entry points and split code for closure-compiler",
   "bin": {
     "closure-calculate-chunks": "cli.js"
