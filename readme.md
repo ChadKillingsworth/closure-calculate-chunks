@@ -44,6 +44,9 @@ Instead of outputting the closure compiler flags, open an HTML page to visualize
 How the name of a chunk is determined. For "entrypoint", chunk names are derived from the imported
 file name. For "numbered", the entrypoint is named "main" and child chunks are numeric indexes.
 
+**--name-prefix prefix**  
+Prefix string prepended to each chunk name.
+
 ## Output
 Outputs a JSON object with closure-compiler chunk definitions and source files in dependency order.
 

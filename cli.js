@@ -62,6 +62,11 @@ const argv = yargs(process.argv)
       default: 'entrypoint',
       type: 'string'
     })
+    .option('name-prefix', {
+      describe: 'Prefix string prepended to each chunk name',
+      default: '',
+      type: 'string'
+    })
     .strict()
     .help()
     .coerce('package-json-entry-names', (arg) => arg.split(/,\s*/g))
@@ -160,7 +165,7 @@ ChunkGraph
     .then((chunkGraph) => {
       const namingStyle = flags.namingStyle === NAMING_STYLE.NUMBERED ? NAMING_STYLE.NUMBERED : NAMING_STYLE.ENTRYPOINT;
       if (flags.visualize) {
-        generateHtml(chunkGraph, namingStyle)
+        generateHtml(chunkGraph, flags.namePrefix, namingStyle)
             .then((html) =>  new Promise((resolve, reject) => {
               const tempFile = temp.path({ prefix: 'closure-calculate-chunks-', suffix: '.html' });
 
@@ -183,7 +188,12 @@ ChunkGraph
             });
       } else {
         try {
-          process.stdout.write(JSON.stringify(chunkGraph.getClosureCompilerFlags(namingStyle), null, 2) + '\n');
+          process.stdout.write(
+              JSON.stringify(
+                  chunkGraph.getClosureCompilerFlags(flags.namePrefix, namingStyle),
+                  null,
+                  2) +
+              '\n');
         } catch (e) {
           process.stderr.write(`Error: ${e.message}\n`);
           process.exitCode = 1;
