@@ -221,10 +221,10 @@ rimraf@~2.6.2:
   dependencies:
     glob "^7.1.3"
 
-sigma@1.x:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/sigma/-/sigma-1.2.2.tgz#9103ce20428e2721156f37562a3a7326f4de60c9"
-  integrity sha512-SppsY4sQqk184eMQpMkfYCaImJvsFfrr73TwHnI50ZmPVZOmSiC+AmrMBk3bNXBBkCx6rfyzSsFHwtaPdmfmmQ==
+sigma@1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/sigma/-/sigma-1.2.1.tgz#2ebf3df2971715afe49ad0c08945c574bb6c5771"
+  integrity sha512-9Z0m1pssXv6sndPMvOzXnM1mVO73YCWDE6X5bKxJyG+9J0B9zJkgtgoBM7cnxEaJMzmrbxPceKTVpwF7cS/xqA==
 
 string-width@^4.1.0, string-width@^4.2.0:
   version "4.2.3"

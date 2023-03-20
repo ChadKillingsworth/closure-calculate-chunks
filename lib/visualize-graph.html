@@ -21,29 +21,89 @@
 </head>
 <body>
 <div id="controls">
-  <button onclick="switchToLoadGraph()">Load Graph</button> <button onclick="switchToDepGraph()">Dependency Graph</button>
+  <button onclick="switchToLoadGraph()">Load Graph</button>
+  <button onclick="switchToDepGraph()">Dependency Graph</button>
+  <input type="text" oninput="filterGraph(this.value)" placeholder="filter">
 </div>
 <div id="container"></div>
 <script src="{{sigma_path}}"></script>
 <script src="{{sigma_force_atlas_path}}"></script>
+<script src="{{graphlib_path}}"></script>
 <script>
-  const loadGraph = {{load_graph}};
-  const depGraph = {{dep_graph}};
+  const loadGraph_ = {{load_graph}};
+  const depGraph_ = {{dep_graph}};
+  let loadGraph = loadGraph_;
+  let depGraph = depGraph_;
+  let currentGraph = loadGraph;
+  let graph_ = loadGraph_;
 
-  let s = new sigma({
-    graph: loadGraph,
-    renderer: {
-      type: 'canvas',
-      container: document.getElementById('container')
-    },
-    settings: {
-      edgeColor: 'target',
-      maxNodeSize: 20,
-      minNodeSize: 4,
-      maxEdgeSize: 3,
-      minEdgeSize: 1
+  window.filterGraph = function(...filters) {
+    const isFilteredNode = (nodeName = '') => {
+      return Boolean(filters.find((filter) => filter.length === 0 || nodeName.indexOf(filter) >= 0));
+    };
+    const graphs = [loadGraph_, depGraph_];
+    graphs.forEach((refGraph) => {
+      const graph = new graphlib.Graph({directed: true, compound: false});
+      refGraph.nodes.forEach((node) => {
+        if (isFilteredNode(node.id)) {
+          return;
+        }
+        graph.setNode(node.id, node);
+      });
+      refGraph.edges.forEach((edge) => {
+        if (graph.node(edge.source) && graph.node(edge.target)) {
+          graph.setEdge(edge.source, edge.target, edge);
+        }
+      });
+      const filteredGraph = {
+        nodes: [],
+        edges: [],
+      };
+      graph.nodes().forEach((nodeName, idx) => {
+        const node = graph.node(nodeName);
+        filteredGraph.nodes.push(node);
+        graph.inEdges(nodeName).forEach((edge) => {
+          filteredGraph.edges.push(graph.edge(edge.v, edge.w));
+        });
+      });
+      if (refGraph === loadGraph_) {
+        loadGraph = filteredGraph;
+      } else if (refGraph === depGraph_) {
+        depGraph = filteredGraph;
+      }
+    });
+    if (currentGraph === 'LOAD') {
+      switchToLoadGraph();
+    } else {
+      switchToDepGraph();
     }
-  });
+  }
+
+  let s;
+  function initSigma() {
+    const oldContainer = document.getElementById('container');
+    const newContainer = document.createElement('div');
+    newContainer.id = oldContainer.id;
+    const parent = oldContainer.parentElement;
+    parent.removeChild(oldContainer);
+    parent.appendChild(newContainer);
+    s = new sigma({
+      graph: graph_,
+      renderer: {
+        type: 'canvas',
+        container: newContainer,
+      },
+      settings: {
+        edgeColor: 'target',
+        maxNodeSize: 20,
+        minNodeSize: 4,
+        maxEdgeSize: 3,
+        minEdgeSize: 1
+      }
+    });
+  }
+  initSigma();
+
   function redrawGraph() {
     s.refresh();
     s.startForceAtlas2();
@@ -55,14 +115,18 @@
   redrawGraph();
 
   function switchToDepGraph() {
+    currentGraph = 'DEP';
+    graph_ = depGraph;
     s.graph.clear();
-    s.graph.read(depGraph);
+    initSigma();
     redrawGraph();
   }
 
   function switchToLoadGraph() {
+    currentGraph = 'LOAD';
+    graph_ = loadGraph;
     s.graph.clear();
-    s.graph.read(loadGraph);
+    initSigma();
     redrawGraph();
   }
 </script>

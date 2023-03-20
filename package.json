@@ -16,7 +16,7 @@
     "graphlib": "2.x",
     "open": "7.x",
     "resolve": "1.x",
-    "sigma": "1.x",
+    "sigma": "1.2.1",
     "temp": "0.x",
     "yargs": "16.x"
   },
