@@ -6,6 +6,7 @@ on:
 jobs:
   publish-packages:
     name: Publish Package
+    if: github.ref_name == github.event.repository.default_branch
     permissions:
       id-token: write  # Required for OIDC
       contents: read
