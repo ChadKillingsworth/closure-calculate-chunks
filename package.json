@@ -7,7 +7,7 @@
   },
   "main": "lib/chunk-graph.js",
   "type": "module",
-  "repository": "https://github.com/chadkillingsworth/closure-calculate-chunks",
+  "repository": "https://github.com/ChadKillingsworth/closure-calculate-chunks",
   "author": "Chad Killingsworth <chadkillingsworth@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
